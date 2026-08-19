@@ -20,7 +20,15 @@ export type BaseSpecies =
 /** Home-art species plus imported creatures retained for the collection. */
 export type Species = BaseSpecies | HordeKey | CritterEnemyKey;
 
-export type WeaponKey = "pistol" | "rifle" | "shotgun" | "minigun";
+export type WeaponKey =
+  | "pistol"
+  | "rifle"
+  | "shotgun"
+  | "minigun"
+  | "smg"
+  | "sniper"
+  | "flak"
+  | "plasma";
 
 export type CharacterKey =
   | "spike"
@@ -156,12 +164,16 @@ export type DecorKind =
   | "rock1"
   | "rock2"
   | "rock3"
-  | "patch"
-  | "crack"
+  /** painted deck panel marking */
+  | "panel"
+  /** hazard chevron lane stripe */
+  | "chevron"
+  /** round grate / vent set into the floor */
+  | "vent"
+  /** inset floor light stud */
+  | "stud"
   | "glyph"
-  | "crystal"
-  | "puddle"
-  | "tuft";
+  | "crystal";
 
 
 export interface Decor extends Vec {
@@ -217,6 +229,7 @@ export interface Echo {
 }
 
 export type FloorTheme = "slab" | "tech" | "ash" | "moss" | "bone";
+
 
 export interface GameState {
   player: Player;

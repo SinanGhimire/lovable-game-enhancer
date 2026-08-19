@@ -118,7 +118,79 @@ export const WEAPONS: Record<WeaponKey, Weapon> = {
     knock: 3,
     shake: 2,
   },
+  smg: {
+    key: "smg",
+    name: "Wasp SMG",
+    color: "#ffe066",
+    sprite: "gunPistol",
+    rate: 0.075,
+    damage: 2.4,
+    pellets: 1,
+    spread: 0.09,
+    speed: 940,
+    bulletRadius: 4,
+    pierce: 0,
+    knock: 4,
+    shake: 2,
+  },
+  sniper: {
+    key: "sniper",
+    name: "Void Lance",
+    color: "#b98bff",
+    sprite: "gunRifle",
+    rate: 0.95,
+    damage: 34,
+    pellets: 1,
+    spread: 0.004,
+    speed: 1700,
+    bulletRadius: 7,
+    pierce: 4,
+    knock: 22,
+    shake: 9,
+  },
+  flak: {
+    key: "flak",
+    name: "Flak Cannon",
+    color: "#ff7b4d",
+    sprite: "gunShotgun",
+    rate: 0.8,
+    damage: 3.4,
+    pellets: 11,
+    spread: 0.52,
+    speed: 700,
+    bulletRadius: 6,
+    pierce: 1,
+    knock: 20,
+    shake: 11,
+  },
+  plasma: {
+    key: "plasma",
+    name: "Plasma Coil",
+    color: "#4dffd0",
+    sprite: "gunRifle",
+    rate: 0.34,
+    damage: 12,
+    pellets: 1,
+    spread: 0.02,
+    speed: 620,
+    bulletRadius: 12,
+    pierce: 3,
+    knock: 14,
+    shake: 5,
+  },
 };
+
+/** weapons that can roll out of a loot crate */
+const LOOT_WEAPONS: WeaponKey[] = [
+  "pistol",
+  "rifle",
+  "shotgun",
+  "minigun",
+  "smg",
+  "sniper",
+  "flak",
+  "plasma",
+];
 
 /* -------------------------------- characters -------------------------------- */
 
@@ -435,23 +507,23 @@ const FLOOR_LOOKS: Record<FloorTheme, FloorLook> = {
     sector: "rgba(120,240,180,0.12)",
   },
   bone: {
-    // sun-bleached boneyard sand
-    base: ["#2a2419", "#221d15", "#1a1610"],
-    plate: "238,216,170",
-    hi: "rgba(255,238,200,0.06)",
-    seam: "rgba(230,190,120,0.10)",
-    grain: "250,232,190",
-    plates: false,
-    sector: "rgba(255,206,120,0.12)",
+    // pale ceramic arena tiling with warm seam lights
+    base: ["#2b2b33", "#23232b", "#1b1b22"],
+    plate: "236,230,214",
+    hi: "rgba(255,250,236,0.07)",
+    seam: "rgba(235,200,140,0.13)",
+    grain: "248,242,226",
+    plates: true,
+    sector: "rgba(255,214,140,0.12)",
   },
   ash: {
-    base: ["#1b1a22", "#15141c", "#100f16"],
-    plate: "170,160,190",
-    hi: "rgba(220,215,235,0.05)",
-    seam: "rgba(150,120,190,0.10)",
-    grain: "220,214,236",
-    plates: false,
-    sector: "rgba(186,150,240,0.10)",
+    base: ["#1d1b26", "#17151f", "#121017"],
+    plate: "176,166,200",
+    hi: "rgba(224,218,242,0.06)",
+    seam: "rgba(158,128,200,0.13)",
+    grain: "224,218,242",
+    plates: true,
+    sector: "rgba(186,150,240,0.11)",
   },
 };
 
@@ -585,74 +657,59 @@ function arenaTile(theme: FloorTheme = "slab"): HTMLCanvasElement {
 export function createState(character: CharacterKey = "spike"): GameState {
   const c = CHARACTERS[character];
   const decor: Decor[] = [];
-  // scuffed arena floor: worn patches, cracks and etched glyphs
-  for (let i = 0; i < 18; i++) {
-    decor.push({
-      x: rand(-WORLD_W / 2, WORLD_W / 2),
-      y: rand(-WORLD_H / 2, WORLD_H / 2),
-      scale: rand(0.7, 1.4),
-      kind: "patch",
-      rot: rand(0, Math.PI * 2),
+  const R = arenaRadius(1, 1);
+
+  // The arena is laid out, not scattered: a central plaza, four approach lanes,
+  // two rings of cover and a lit perimeter, so the space reads as a real map.
+  const ring = (count: number, radius: number, offset: number) =>
+    Array.from({ length: count }, (_, i) => {
+      const a = offset + (i / count) * Math.PI * 2;
+      return { x: Math.cos(a) * radius, y: Math.sin(a) * radius, a };
     });
-  }
-  for (let i = 0; i < 16; i++) {
-    decor.push({
-      x: rand(-WORLD_W / 2, WORLD_W / 2),
-      y: rand(-WORLD_H / 2, WORLD_H / 2),
-      scale: rand(0.6, 1.5),
-      kind: "crack",
-      rot: rand(0, Math.PI * 2),
-    });
-  }
-  for (let i = 0; i < 6; i++) {
-    decor.push({
-      x: rand(-WORLD_W / 2, WORLD_W / 2),
-      y: rand(-WORLD_H / 2, WORLD_H / 2),
-      scale: rand(0.8, 1.6),
-      kind: "glyph",
-      rot: rand(0, Math.PI * 2),
-    });
-  }
-  // glowing crystal clusters, shallow pools and grass tufts add depth to the arena
-  for (let i = 0; i < 14; i++) {
-    decor.push({
-      x: rand(-WORLD_W / 2, WORLD_W / 2),
-      y: rand(-WORLD_H / 2, WORLD_H / 2),
-      scale: rand(0.55, 1.15),
-      kind: "crystal",
-      rot: rand(0, Math.PI * 2),
-    });
-  }
-  for (let i = 0; i < 10; i++) {
-    decor.push({
-      x: rand(-WORLD_W / 2, WORLD_W / 2),
-      y: rand(-WORLD_H / 2, WORLD_H / 2),
-      scale: rand(0.7, 1.6),
-      kind: "puddle",
-      rot: rand(0, Math.PI * 2),
-    });
-  }
-  for (let i = 0; i < 26; i++) {
-    decor.push({
-      x: rand(-WORLD_W / 2, WORLD_W / 2),
-      y: rand(-WORLD_H / 2, WORLD_H / 2),
-      scale: rand(0.5, 1.2),
-      kind: "tuft",
-      rot: rand(0, Math.PI * 2),
-    });
+
+  // painted deck panels marking the plaza and the four staging bays
+  decor.push({ x: 0, y: 0, scale: 2.6, kind: "panel", rot: 0 });
+  for (const q of ring(4, R * 0.52, Math.PI / 4)) {
+    decor.push({ x: q.x, y: q.y, scale: 1.5, kind: "panel", rot: q.a });
   }
 
-  // a few stone blocks so the arena has silhouettes to read against
-  for (let i = 0; i < 10; i++) {
-    decor.push({
-      x: rand(-WORLD_W / 2, WORLD_W / 2),
-      y: rand(-WORLD_H / 2, WORLD_H / 2),
-      scale: rand(0.4, 0.85),
-      kind: pick(["rock1", "rock2", "rock3"] as const),
-      rot: 0,
-    });
+  // hazard chevrons pointing down each of the four approach lanes
+  for (const lane of ring(4, 1, 0)) {
+    for (let step = 1; step <= 5; step++) {
+      const d = R * (0.2 + step * 0.13);
+      decor.push({ x: lane.x * d, y: lane.y * d, scale: 1, kind: "chevron", rot: lane.a });
+    }
   }
 
+  // vents set into the plaza floor, evenly spaced
+  for (const v of ring(6, R * 0.3, Math.PI / 6)) {
+    decor.push({ x: v.x, y: v.y, scale: 1, kind: "vent", rot: 0 });
+  }
+
+  // inset floor lights trace the perimeter walkway
+  for (const l of ring(36, R * 0.9, 0)) {
+    decor.push({ x: l.x, y: l.y, scale: 1, kind: "stud", rot: l.a });
+  }
+
+  // marker glyphs at the cardinal sector gates
+  for (const g of ring(4, R * 0.78, 0)) {
+    decor.push({ x: g.x, y: g.y, scale: 1.1, kind: "glyph", rot: g.a });
+  }
+
+  // beacon crystals mark the outer corners of the fighting ring
+  for (const c of ring(8, R * 0.68, Math.PI / 8)) {
+    decor.push({ x: c.x, y: c.y, scale: 0.95, kind: "crystal", rot: 0 });
+  }
+
+  // two symmetric rings of cover blocks — the actual tactical furniture
+  const inner = ring(6, R * 0.36, Math.PI / 6);
+  const outer = ring(8, R * 0.6, 0);
+  inner.forEach((c, i) =>
+    decor.push({ x: c.x, y: c.y, scale: 0.7, kind: (["rock1", "rock2", "rock3"] as const)[i % 3]!, rot: 0 }),
+  );
+  outer.forEach((c, i) =>
+    decor.push({ x: c.x, y: c.y, scale: 0.85, kind: (["rock2", "rock3", "rock1"] as const)[i % 3]!, rot: 0 }),
+  );
 
   const state: GameState = {
     cam: { x: -WORLD_W / 2, y: -WORLD_H / 2 },
@@ -928,7 +985,7 @@ function dropPickup(s: GameState, x: number, y: number, species: Species) {
   if (r2 < 0.2) kind = "health";
   else if (r2 < 0.34) {
     kind = "weapon";
-    weapon = pick(["pistol", "rifle", "shotgun", "minigun"] as WeaponKey[]);
+    weapon = pick(LOOT_WEAPONS);
   } else if (r2 < 0.6) kind = "speed";
   else if (r2 < 0.8) kind = "rate";
   else kind = "damage";
@@ -955,7 +1012,7 @@ function scatterLoot(s: GameState) {
   if (r < 0.18) kind = "health";
   else if (r < 0.34) {
     kind = "weapon";
-    weapon = pick(["pistol", "rifle", "shotgun", "minigun"] as WeaponKey[]);
+    weapon = pick(LOOT_WEAPONS);
   } else if (r < 0.6) kind = "speed";
   else if (r < 0.8) kind = "rate";
   else kind = "damage";
@@ -1410,268 +1467,33 @@ export function update(s: GameState, input: Input, dt: number) {
       continue;
     }
     if (it.kind === "xp") {
-      it.vx = (it.vx ?? 0) * 0.88;
-      it.vy = (it.vy ?? 0) * 0.88;
-      const dxo = p.x - it.x;
-      const dyo = p.y - it.y;
-      const dist = Math.hypot(dxo, dyo) || 1;
-      if (dist < 240) {
-        const pullPower = 620 * (1 - dist / 300);
-        it.vx = (it.vx ?? 0) + (dxo / dist) * pullPower * dt * 6;
-        it.vy = (it.vy ?? 0) + (dyo / dist) * pullPower * dt * 6;
-      }
-      it.x += (it.vx ?? 0) * dt;
-      it.y += (it.vy ?? 0) * dt;
-      if (dist < p.radius + 18) {
-        s.pickups.splice(i, 1);
-        grantXp(s, it.amount ?? 1);
-      }
-      continue;
-    }
-    if (it.kind === "upgrade") {
-      // gently drift toward the player so a perk is never missed
-      const dxo = p.x - it.x;
-      const dyo = p.y - it.y;
-      const dist = Math.hypot(dxo, dyo) || 1;
-      if (dist < 150) {
-        it.x += (dxo / dist) * 90 * dt;
-        it.y += (dyo / dist) * 90 * dt;
-      }
-    }
-    if (Math.hypot(p.x - it.x, p.y - it.y) < p.radius + 22) {
-      s.pickups.splice(i, 1);
-      s.sfx.push("pickup");
-      let text = "";
-      if (it.kind === "upgrade" && it.upgrade) {
-        const u = UPGRADE_MAP[it.upgrade];
-        if (u) {
-          applyUpgrade(s, it.upgrade);
-          text = u.name.toUpperCase();
-          s.sfx.push("level");
-          burst(s, it.x, it.y, 26, RARITY_COLOR[u.rarity], 260);
-          s.popups.push({ x: it.x, y: it.y - 56, life: 1.4, text: u.desc.toUpperCase() });
-        }
-      } else if (it.kind === "health") {
-        p.hp = Math.min(p.maxHp, p.hp + 28);
-        text = "+28 HP";
-      } else if (it.kind === "weapon" && it.weapon) {
-        p.weapon = it.weapon;
-        text = WEAPONS[it.weapon].name.toUpperCase();
-      } else if (it.kind === "speed") {
-        p.baseSpeed += 14;
-        p.speed = p.baseSpeed;
-        text = "+SPEED";
-      } else if (it.kind === "rate") {
-        p.rateMult = Math.min(3, p.rateMult + 0.12);
-        text = "+FIRE RATE";
-      } else {
-        p.damageMult += 0.25;
-        text = "+DAMAGE";
-      }
-      s.popups.push({ x: it.x, y: it.y - 30, life: 1, text });
-      burst(s, it.x, it.y, 8, "#ffe9a8", 160);
-    }
-  }
-
-  /* -------------------------------- enemies -------------------------------- */
-  const er = s.arenaR - 10;
-  for (let i = s.enemies.length - 1; i >= 0; i--) {
-    const e = s.enemies[i]!;
-    if (e.dying) {
-      e.deathT += dt;
-      if (e.deathT > 0.62) s.enemies.splice(i, 1);
-      continue;
-    }
-
-    let tx = p.x;
-    let ty = p.y;
-    let best = Math.hypot(p.x - e.x, p.y - e.y);
-    let targetEcho: Echo | null = null;
-    for (const ec of s.echoes) {
-      if (ec.dead) continue;
-      const d = Math.hypot(ec.x - e.x, ec.y - e.y);
-      if (d < best) {
-        best = d;
-        tx = ec.x;
-        ty = ec.y;
-        targetEcho = ec;
-      }
-    }
-
-    const ang = Math.atan2(ty - e.y, tx - e.x);
-    e.x += Math.cos(ang) * e.speed * dt;
-    e.y += Math.sin(ang) * e.speed * dt;
-    e.animT += dt;
-    e.facing = tx < e.x ? -1 : 1;
-    if (e.hurt > 0) e.hurt -= dt;
-    if (e.attackCd > 0) e.attackCd -= dt;
-
-    // separation against neighbours in the same grid cell only (cheap + spreads them)
-    const bucket = grid.get(cellKey(Math.floor(e.x / CELL), Math.floor(e.y / CELL)));
-    if (bucket) {
-      for (const o of bucket) {
-        if (o === e || o.dying) continue;
-        const ox = e.x - o.x;
-        const oy = e.y - o.y;
-        const d = Math.hypot(ox, oy);
-        const min = (e.radius + o.radius) * 1.15;
-        if (d > 0.001 && d < min) {
-          const push = (min - d) / 2;
-          e.x += (ox / d) * push;
-          e.y += (oy / d) * push;
-          o.x -= (ox / d) * push;
-          o.y -= (oy / d) * push;
-        }
-      }
-    }
-
-    // zombies stay inside the arena too
-    const ed = Math.hypot(e.x, e.y);
-    if (ed > er) {
-      e.x = (e.x / ed) * er;
-      e.y = (e.y / ed) * er;
-    }
-
-    // contact damage — echoes can be mauled, but the player is ALWAYS in danger
-    if (
-      targetEcho &&
-      e.attackCd <= 0 &&
-      !targetEcho.dead &&
-      Math.hypot(targetEcho.x - e.x, targetEcho.y - e.y) < e.radius + 20
-    ) {
-      e.attackCd = 0.55;
-      targetEcho.hp -= e.damage;
-      burst(s, targetEcho.x, targetEcho.y - 14, 6, "#9fd8ff", 180);
-      if (targetEcho.hp <= 0 && !targetEcho.dead) {
-        targetEcho.dead = true;
-        burst(s, targetEcho.x, targetEcho.y - 18, 18, "#9fd8ff", 260);
-      }
-    }
-
-    if (p.invuln <= 0 && Math.hypot(p.x - e.x, p.y - e.y) < p.radius + e.radius + 4) {
-      p.hp -= e.damage;
-      p.invuln = 0.45;
-      s.sfx.push("hurt");
-      s.shake = Math.max(s.shake, 10);
-      burst(s, p.x, p.y - 14, 10, "#ff8f6a", 200);
-      if (p.hp <= 0) {
-        p.hp = 0;
-        if (!s.over) s.sfx.push("death");
-        s.over = true;
-      }
-    }
-  }
-}
-
-/* ---------------------------------- render ---------------------------------- */
-
-function drawFrame(
-  ctx: CanvasRenderingContext2D,
-  strip: Strip,
-  frame: number,
-  x: number,
-  y: number,
-  height: number,
-  flip = false,
-  tint?: string,
-) {
-  const img = strip.img;
-  if (!img.width) return;
-  const src = tint ? tinted(img, tint, 0.5) : img;
-  const fw = img.width / strip.frames;
-  const fh = img.height;
-  const h = height;
-  const w = h * (fw / fh);
-  const i = Math.max(0, Math.min(strip.frames - 1, Math.floor(frame)));
-  ctx.save();
-  ctx.translate(x, y);
-  if (flip) ctx.scale(-1, 1);
-  ctx.drawImage(src, i * fw, 0, fw, fh, -w / 2, -h, w, h);
-  ctx.restore();
-}
-
-function drawImageCentered(
-  ctx: CanvasRenderingContext2D,
-  img: CanvasImageSource,
-  w0: number,
-  h0: number,
-  x: number,
-  y: number,
-  height: number,
-  rot = 0,
-  alpha = 1,
-) {
-  if (!w0) return;
-  const w = height * (w0 / h0);
-  ctx.save();
-  ctx.globalAlpha *= alpha;
-  ctx.translate(x, y);
-  if (rot) ctx.rotate(rot);
-  ctx.drawImage(img, -w / 2, -height / 2, w, height);
-  ctx.restore();
-}
-
-function drawShadow(ctx: CanvasRenderingContext2D, x: number, y: number, rx: number) {
-  ctx.save();
-  ctx.globalAlpha = 0.26;
-  ctx.fillStyle = "#0d0b14";
-  ctx.beginPath();
-  ctx.ellipse(x, y, rx, rx * 0.4, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-}
-
-function gunImage(sprites: Sprites, weapon: WeaponKey) {
-  const w = WEAPONS[weapon];
-  const img =
-    w.sprite === "gunPistol"
-      ? sprites.singles.gunPistol
-      : w.sprite === "gunShotgun"
-        ? sprites.singles.gunShotgun
-        : sprites.singles.gun;
-  return { img: tinted(img, w.color, 0.62), w: img.width, h: img.height };
-}
-
-function drawGun(
-  ctx: CanvasRenderingContext2D,
-  sprites: Sprites,
-  weapon: WeaponKey,
-  x: number,
-  y: number,
-  aim: number,
-  facing: 1 | -1,
-  recoil: number,
-  muzzle: boolean,
-) {
-  const g = gunImage(sprites, weapon);
-  if (!g.w) return;
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(aim);
-  if (facing === -1) ctx.scale(1, -1);
-  const gunH = weapon === "pistol" ? 22 : 28;
-  const gunW = gunH * (g.w / g.h);
-  ctx.drawImage(g.img, -gunW * 0.3 - recoil, -gunH / 2, gunW, gunH);
-  if (muzzle) {
-    const m = sprites.singles.muzzle;
-    drawImageCentered(ctx, m, m.width, m.height, gunW * 0.78 - recoil, 0, 34, Math.PI);
-  }
-  ctx.restore();
-}
-
-function drawPickup(ctx: CanvasRenderingContext2D, sprites: Sprites, it: Pickup, time: number) {
-  if (it.kind === "xp") {
     const yy = it.y - 14 - Math.sin(it.bob * 2) * 3;
+    const glow = 0.6 + Math.sin(time * 5 + it.bob) * 0.25;
     ctx.save();
-
-    ctx.fillStyle = "#7cf2c8";
+    // ground bloom
+    ctx.globalCompositeOperation = "lighter";
+    const halo = ctx.createRadialGradient(it.x, yy, 0, it.x, yy, 26);
+    halo.addColorStop(0, `rgba(124,242,200,${(0.32 * glow).toFixed(3)})`);
+    halo.addColorStop(1, "rgba(124,242,200,0)");
+    ctx.fillStyle = halo;
+    ctx.fillRect(it.x - 26, yy - 26, 52, 52);
+    ctx.globalCompositeOperation = "source-over";
+    // faceted shard with a lit left face
     ctx.beginPath();
-    ctx.moveTo(it.x, yy - 8);
-    ctx.lineTo(it.x + 6, yy);
-    ctx.lineTo(it.x, yy + 8);
-    ctx.lineTo(it.x - 6, yy);
+    ctx.moveTo(it.x, yy - 10);
+    ctx.lineTo(it.x + 7, yy);
+    ctx.lineTo(it.x, yy + 10);
+    ctx.lineTo(it.x - 7, yy);
     ctx.closePath();
+    const gg = ctx.createLinearGradient(it.x - 7, yy - 10, it.x + 7, yy + 10);
+    gg.addColorStop(0, "#dcfff0");
+    gg.addColorStop(0.5, "#5fe6b4");
+    gg.addColorStop(1, "#1d8f74");
+    ctx.fillStyle = gg;
     ctx.fill();
+    ctx.strokeStyle = "rgba(8,26,22,0.8)";
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
     ctx.restore();
     return;
   }
@@ -1682,18 +1504,68 @@ function drawPickup(ctx: CanvasRenderingContext2D, sprites: Sprites, it: Pickup,
   drawShadow(ctx, it.x, it.y, 14);
 
   if (it.kind === "weapon" && it.weapon) {
+    const wep = WEAPONS[it.weapon];
+    const col = wep.color;
     const g = gunImage(sprites, it.weapon);
+    const pulse = 0.5 + 0.5 * Math.sin(time * 3.2 + it.bob);
     ctx.save();
-    ctx.globalAlpha *= 0.9;
-    ctx.fillStyle = "rgba(20,18,32,0.75)";
-    ctx.strokeStyle = WEAPONS[it.weapon].color;
-    ctx.lineWidth = 2;
+    // ground bloom in the weapon's colour
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    const grd = ctx.createRadialGradient(it.x, it.y - 6, 2, it.x, it.y - 6, 58);
+    grd.addColorStop(0, col);
+    grd.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.globalAlpha = 0.16 + pulse * 0.1;
+    ctx.fillStyle = grd;
     ctx.beginPath();
-    ctx.roundRect(it.x - 26, y - 18, 52, 34, 8);
+    ctx.ellipse(it.x, it.y - 6, 58, 30, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.stroke();
     ctx.restore();
-    if (g.w) drawImageCentered(ctx, g.img, g.w, g.h, it.x, y, 20);
+    // crate body with a bevelled lid
+    ctx.translate(it.x, y);
+    const cw = 62;
+    const ch = 42;
+    const body = ctx.createLinearGradient(0, -ch / 2, 0, ch / 2);
+    body.addColorStop(0, "rgba(38,36,58,0.96)");
+    body.addColorStop(1, "rgba(14,13,24,0.96)");
+    ctx.fillStyle = body;
+    ctx.beginPath();
+    ctx.roundRect(-cw / 2, -ch / 2, cw, ch, 10);
+    ctx.fill();
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 2.5;
+    ctx.globalAlpha = 0.9;
+    ctx.stroke();
+    // corner brackets
+    ctx.globalAlpha = 0.55 + pulse * 0.35;
+    ctx.lineWidth = 3;
+    for (const [sx2, sy2] of [
+      [-1, -1],
+      [1, -1],
+      [-1, 1],
+      [1, 1],
+    ] as [number, number][]) {
+      ctx.beginPath();
+      ctx.moveTo((sx2 * cw) / 2 - sx2 * 14, (sy2 * ch) / 2 - sy2 * 2);
+      ctx.lineTo((sx2 * cw) / 2 - sx2 * 3, (sy2 * ch) / 2 - sy2 * 2);
+      ctx.lineTo((sx2 * cw) / 2 - sx2 * 3, (sy2 * ch) / 2 - sy2 * 13);
+      ctx.stroke();
+    }
+    // colour bar across the lid
+    ctx.globalAlpha = 0.3;
+    ctx.fillStyle = col;
+    ctx.fillRect(-cw / 2 + 3, -ch / 2 + 3, cw - 6, 5);
+    ctx.globalAlpha = 1;
+    ctx.restore();
+    if (g.w) drawImageCentered(ctx, g.img, g.w, g.h, it.x, y + 2, 26);
+    // name plate
+    ctx.save();
+    ctx.globalAlpha = 0.95;
+    ctx.fillStyle = col;
+    ctx.font = "800 10px ui-sans-serif, system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(wep.name.toUpperCase(), it.x, y - 28);
+    ctx.restore();
   } else if (it.kind === "upgrade" && it.upgrade) {
     const u = UPGRADE_MAP[it.upgrade];
     const col = u ? RARITY_COLOR[u.rarity] : "#ffd166";
@@ -1758,24 +1630,63 @@ function drawPickup(ctx: CanvasRenderingContext2D, sprites: Sprites, it: Pickup,
       damage: "#ff9f4d",
     };
     const col = colors[it.kind] ?? "#fff";
+    const pulse = 0.5 + 0.5 * Math.sin(time * 3.4 + it.bob);
     ctx.save();
+    // ground bloom
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    const grd = ctx.createRadialGradient(it.x, it.y - 4, 2, it.x, it.y - 4, 44);
+    grd.addColorStop(0, col);
+    grd.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.globalAlpha = 0.14 + pulse * 0.1;
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.ellipse(it.x, it.y - 4, 44, 22, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
 
-    ctx.fillStyle = "rgba(18,16,28,0.85)";
+    ctx.translate(it.x, y);
+    // hexagonal token
+    const rad = 18;
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = -Math.PI / 2 + (i / 6) * Math.PI * 2;
+      const px = Math.cos(a) * rad;
+      const py = Math.sin(a) * rad;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    const body = ctx.createLinearGradient(0, -rad, 0, rad);
+    body.addColorStop(0, "rgba(40,38,60,0.96)");
+    body.addColorStop(1, "rgba(13,12,22,0.96)");
+    ctx.fillStyle = body;
+    ctx.fill();
     ctx.strokeStyle = col;
     ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.roundRect(it.x - 15, y - 15, 30, 30, 8);
-    ctx.fill();
+    ctx.globalAlpha = 0.85 + pulse * 0.15;
     ctx.stroke();
+    // orbiting rarity dash
+    ctx.globalAlpha = 0.35 + pulse * 0.3;
+    ctx.rotate(time * 1.1);
+    ctx.setLineDash([4, 6]);
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.arc(0, 0, rad + 6, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.rotate(-time * 1.1);
+    ctx.globalAlpha = 1;
+
     ctx.fillStyle = col;
     if (it.kind === "health") {
-      ctx.fillRect(it.x - 8, y - 3, 16, 6);
-      ctx.fillRect(it.x - 3, y - 8, 6, 16);
+      ctx.fillRect(-8, -3, 16, 6);
+      ctx.fillRect(-3, -8, 6, 16);
     } else {
       ctx.font = "800 15px ui-sans-serif, system-ui, sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(it.kind === "speed" ? "»" : it.kind === "rate" ? "⚡" : "✦", it.x, y + 1);
+      ctx.fillText(it.kind === "speed" ? "»" : it.kind === "rate" ? "⚡" : "✦", 0, 1);
     }
     ctx.restore();
   }
@@ -1936,82 +1847,102 @@ export function render(ctx: CanvasRenderingContext2D, s: GameState, sprites: Spr
   ctx.stroke();
   ctx.restore();
 
-  // floor decals: worn plates, cracks and etched glyphs
+  // arena furniture decals — panels, lane chevrons, vents and inset lights
+  const accent = floorSectorColor(s.floor);
   for (const d of s.decor) {
     if (d.kind === "rock1" || d.kind === "rock2" || d.kind === "rock3" || d.kind === "crystal")
       continue;
     const dx = wrap(d.x, cam.x + WORLD_W / 2, WORLD_W);
     const dy = wrap(d.y, cam.y + WORLD_H / 2, WORLD_H);
     ctx.save();
-    if (d.kind === "patch") {
-      ctx.globalAlpha = 0.2;
-      ctx.fillStyle = d.scale > 1 ? "#0d1420" : "#27334a";
-      ctx.beginPath();
-      ctx.ellipse(dx, dy, 96 * d.scale, 48 * d.scale, d.rot, 0, Math.PI * 2);
-      ctx.fill();
-    } else if (d.kind === "puddle") {
-      // shallow reflective pool with a soft rim light
-      ctx.translate(dx, dy);
+    ctx.translate(dx, dy);
+    if (d.kind === "panel") {
+      // painted deck panel: filled pad, bright outline, corner registration ticks
+      const w = 210 * d.scale;
+      const h = 130 * d.scale;
       ctx.rotate(d.rot);
-      ctx.globalAlpha = 0.5;
-      ctx.fillStyle = "rgba(10,26,34,0.75)";
+      ctx.globalAlpha = 0.22;
+      ctx.fillStyle = accent;
       ctx.beginPath();
-      ctx.ellipse(0, 0, 62 * d.scale, 30 * d.scale, 0, 0, Math.PI * 2);
+      ctx.roundRect(-w / 2, -h / 2, w, h, 14);
       ctx.fill();
-      ctx.globalAlpha = 0.28 + Math.sin(time * 1.4 + d.x) * 0.06;
-      ctx.strokeStyle = "rgba(150,235,255,0.9)";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, 62 * d.scale, 30 * d.scale, 0, 0, Math.PI * 2);
+      ctx.globalAlpha = 0.5;
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 3;
       ctx.stroke();
-      ctx.globalAlpha = 0.18;
-      ctx.beginPath();
-      ctx.ellipse(-14 * d.scale, -6 * d.scale, 22 * d.scale, 7 * d.scale, 0, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(200,245,255,0.9)";
-      ctx.fill();
-    } else if (d.kind === "tuft") {
-      // little grass tufts, drawn as three blades leaning with the wind
-      ctx.translate(dx, dy);
-      ctx.globalAlpha = 0.5;
-      ctx.strokeStyle = "rgba(90,150,110,0.9)";
-      ctx.lineWidth = 2.2 * d.scale;
-      ctx.lineCap = "round";
-      const sway = Math.sin(time * 1.5 + d.x * 0.05) * 3 * d.scale;
-      for (let b = -1; b <= 1; b++) {
+      ctx.globalAlpha = 0.35;
+      ctx.lineWidth = 5;
+      const tick = 22 * d.scale;
+      for (const [sx2, sy2] of [
+        [-1, -1],
+        [1, -1],
+        [-1, 1],
+        [1, 1],
+      ] as [number, number][]) {
         ctx.beginPath();
-        ctx.moveTo(b * 5 * d.scale, 0);
-        ctx.quadraticCurveTo(
-          b * 6 * d.scale + sway,
-          -9 * d.scale,
-          b * 9 * d.scale + sway * 1.6,
-          -16 * d.scale,
-        );
+        ctx.moveTo((sx2 * w) / 2 - sx2 * tick, (sy2 * h) / 2);
+        ctx.lineTo((sx2 * w) / 2, (sy2 * h) / 2);
+        ctx.lineTo((sx2 * w) / 2, (sy2 * h) / 2 - sy2 * tick);
         ctx.stroke();
       }
-    } else if (d.kind === "crack") {
-      ctx.globalAlpha = 0.4;
-      ctx.strokeStyle = "rgba(6,8,14,0.9)";
-      ctx.lineWidth = 2.2 * d.scale;
-      ctx.translate(dx, dy);
+    } else if (d.kind === "chevron") {
+      // hazard chevron pointing outward along a lane
+      ctx.rotate(d.rot);
+      ctx.globalAlpha = 0.3;
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 8;
+      ctx.lineCap = "butt";
+      ctx.lineJoin = "miter";
+      ctx.beginPath();
+      ctx.moveTo(-22, -26);
+      ctx.lineTo(14, 0);
+      ctx.lineTo(-22, 26);
+      ctx.stroke();
+    } else if (d.kind === "vent") {
+      // recessed grate: dark well with louvre bars and a rim
+      ctx.globalAlpha = 0.7;
+      ctx.fillStyle = "rgba(6,8,14,0.72)";
+      ctx.beginPath();
+      ctx.arc(0, 0, 34 * d.scale, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 0.45;
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.globalAlpha = 0.3;
+      ctx.lineWidth = 4;
+      for (let i = -2; i <= 2; i++) {
+        const off = i * 11 * d.scale;
+        const half = Math.sqrt(Math.max(0, (30 * d.scale) ** 2 - off ** 2));
+        ctx.beginPath();
+        ctx.moveTo(-half, off);
+        ctx.lineTo(half, off);
+        ctx.stroke();
+      }
+    } else if (d.kind === "stud") {
+      // inset perimeter light, breathing slowly
+      const glow = 0.45 + Math.sin(time * 2 + d.rot * 3) * 0.2;
+      ctx.globalCompositeOperation = "lighter";
+      const halo = ctx.createRadialGradient(0, 0, 0, 0, 0, 26);
+      halo.addColorStop(0, `rgba(150,225,255,${(0.3 * glow).toFixed(3)})`);
+      halo.addColorStop(1, "rgba(150,225,255,0)");
+      ctx.fillStyle = halo;
+      ctx.fillRect(-26, -26, 52, 52);
+      ctx.fillStyle = `rgba(210,245,255,${(0.5 + glow * 0.4).toFixed(3)})`;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 5, 3.4, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // sector gate glyph etched into the deck
+      ctx.globalAlpha = 0.26 + Math.sin(time * 1.6 + d.x) * 0.05;
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 4;
       ctx.rotate(d.rot);
       ctx.beginPath();
-      ctx.moveTo(-60 * d.scale, 0);
-      ctx.lineTo(-18 * d.scale, -9 * d.scale);
-      ctx.lineTo(14 * d.scale, 6 * d.scale);
-      ctx.lineTo(58 * d.scale, -4 * d.scale);
-      ctx.stroke();
-    } else {
-      // glyph ring etched into the deck, faintly lit
-      ctx.globalAlpha = 0.22 + Math.sin(time * 1.6 + d.x) * 0.05;
-      ctx.strokeStyle = "rgba(120,210,255,0.85)";
-      ctx.lineWidth = 3;
-      ctx.translate(dx, dy);
-      ctx.rotate(d.rot + time * 0.15);
-      ctx.beginPath();
-      ctx.arc(0, 0, 52 * d.scale, 0, Math.PI * 1.45);
+      ctx.arc(0, 0, 46 * d.scale, -Math.PI * 0.62, Math.PI * 0.62);
       ctx.stroke();
       ctx.beginPath();
-      ctx.arc(0, 0, 34 * d.scale, Math.PI, Math.PI * 2.3);
+      ctx.arc(0, 0, 30 * d.scale, Math.PI * 0.4, Math.PI * 1.6);
       ctx.stroke();
     }
     ctx.restore();
