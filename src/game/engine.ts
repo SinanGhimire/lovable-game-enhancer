@@ -2037,6 +2037,60 @@ export function render(ctx: CanvasRenderingContext2D, s: GameState, sprites: Spr
     }
   }
 
+  // glowing crystal clusters: chunky faceted shards with a bloom halo
+  for (const d of s.decor) {
+    if (d.kind !== "crystal") continue;
+    const dx = wrap(d.x, cam.x + WORLD_W / 2, WORLD_W);
+    const dy = wrap(d.y, cam.y + WORLD_H / 2, WORLD_H);
+    const glow = 0.5 + Math.sin(time * 1.8 + d.x * 0.03) * 0.18;
+    ctx.save();
+    ctx.translate(dx, dy);
+    drawShadow(ctx, 0, 0, 20 * d.scale);
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    const halo = ctx.createRadialGradient(0, -18 * d.scale, 0, 0, -18 * d.scale, 68 * d.scale);
+    halo.addColorStop(0, `rgba(130,220,255,${(0.22 * glow).toFixed(3)})`);
+    halo.addColorStop(1, "rgba(130,220,255,0)");
+    ctx.fillStyle = halo;
+    ctx.fillRect(-70 * d.scale, -90 * d.scale, 140 * d.scale, 140 * d.scale);
+    ctx.restore();
+    const shards: [number, number, number][] = [
+      [-13, 34, 0.8],
+      [0, 54, 1],
+      [12, 30, 0.7],
+    ];
+    for (const [ox, hh, w] of shards) {
+      const sh = hh * d.scale;
+      const sw = 9 * w * d.scale;
+      const x = ox * d.scale;
+      ctx.beginPath();
+      ctx.moveTo(x, -sh);
+      ctx.lineTo(x + sw, -sh * 0.42);
+      ctx.lineTo(x + sw * 0.6, 0);
+      ctx.lineTo(x - sw * 0.6, 0);
+      ctx.lineTo(x - sw, -sh * 0.42);
+      ctx.closePath();
+      const grad = ctx.createLinearGradient(x - sw, 0, x + sw, -sh);
+      grad.addColorStop(0, "#1b4f6e");
+      grad.addColorStop(0.55, `rgba(96,200,247,${(0.85 * glow + 0.15).toFixed(3)})`);
+      grad.addColorStop(1, "#d8f6ff");
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.lineWidth = 2.2;
+      ctx.strokeStyle = "rgba(8,16,26,0.85)";
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x, -sh);
+      ctx.lineTo(x, 0);
+      ctx.strokeStyle = "rgba(226,250,255,0.35)";
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+
+
 
   const drawEnemy = (e: Enemy) => {
     const st = STATS[e.species];
