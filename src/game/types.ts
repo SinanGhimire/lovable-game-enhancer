@@ -152,7 +152,16 @@ export interface Popup extends Vec {
   text: string;
 }
 
-export type DecorKind = "rock1" | "rock2" | "rock3" | "patch" | "crack" | "glyph";
+export type DecorKind =
+  | "rock1"
+  | "rock2"
+  | "rock3"
+  | "patch"
+  | "crack"
+  | "glyph"
+  | "crystal"
+  | "puddle"
+  | "tuft";
 
 
 export interface Decor extends Vec {
@@ -207,7 +216,7 @@ export interface Echo {
   dead: boolean;
 }
 
-export type FloorTheme = "slab" | "tech" | "ash";
+export type FloorTheme = "slab" | "tech" | "ash" | "moss" | "bone";
 
 export interface GameState {
   player: Player;

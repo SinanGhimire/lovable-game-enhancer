@@ -424,6 +424,26 @@ const FLOOR_LOOKS: Record<FloorTheme, FloorLook> = {
     plates: true,
     sector: "rgba(160,196,236,0.12)",
   },
+  moss: {
+    // overgrown ruin — damp green stone with lichen
+    base: ["#1a2620", "#14201b", "#101a16"],
+    plate: "150,210,170",
+    hi: "rgba(200,255,220,0.06)",
+    seam: "rgba(110,220,160,0.12)",
+    grain: "190,240,210",
+    plates: true,
+    sector: "rgba(120,240,180,0.12)",
+  },
+  bone: {
+    // sun-bleached boneyard sand
+    base: ["#2a2419", "#221d15", "#1a1610"],
+    plate: "238,216,170",
+    hi: "rgba(255,238,200,0.06)",
+    seam: "rgba(230,190,120,0.10)",
+    grain: "250,232,190",
+    plates: false,
+    sector: "rgba(255,206,120,0.12)",
+  },
   ash: {
     base: ["#1b1a22", "#15141c", "#100f16"],
     plate: "170,160,190",
@@ -593,6 +613,35 @@ export function createState(character: CharacterKey = "spike"): GameState {
       rot: rand(0, Math.PI * 2),
     });
   }
+  // glowing crystal clusters, shallow pools and grass tufts add depth to the arena
+  for (let i = 0; i < 14; i++) {
+    decor.push({
+      x: rand(-WORLD_W / 2, WORLD_W / 2),
+      y: rand(-WORLD_H / 2, WORLD_H / 2),
+      scale: rand(0.55, 1.15),
+      kind: "crystal",
+      rot: rand(0, Math.PI * 2),
+    });
+  }
+  for (let i = 0; i < 10; i++) {
+    decor.push({
+      x: rand(-WORLD_W / 2, WORLD_W / 2),
+      y: rand(-WORLD_H / 2, WORLD_H / 2),
+      scale: rand(0.7, 1.6),
+      kind: "puddle",
+      rot: rand(0, Math.PI * 2),
+    });
+  }
+  for (let i = 0; i < 26; i++) {
+    decor.push({
+      x: rand(-WORLD_W / 2, WORLD_W / 2),
+      y: rand(-WORLD_H / 2, WORLD_H / 2),
+      scale: rand(0.5, 1.2),
+      kind: "tuft",
+      rot: rand(0, Math.PI * 2),
+    });
+  }
+
   // a few stone blocks so the arena has silhouettes to read against
   for (let i = 0; i < 10; i++) {
     decor.push({
@@ -662,7 +711,7 @@ export function createState(character: CharacterKey = "spike"): GameState {
     sfx: [],
     takenUpgrades: {},
     paused: false,
-    floor: pick(["slab", "tech", "ash"] as const),
+    floor: pick(["slab", "tech", "ash", "moss", "bone"] as const),
     arenaR: arenaRadius(1, 1),
   };
   // seed the arena so it never feels empty on the first seconds
@@ -1889,7 +1938,8 @@ export function render(ctx: CanvasRenderingContext2D, s: GameState, sprites: Spr
 
   // floor decals: worn plates, cracks and etched glyphs
   for (const d of s.decor) {
-    if (d.kind === "rock1" || d.kind === "rock2" || d.kind === "rock3") continue;
+    if (d.kind === "rock1" || d.kind === "rock2" || d.kind === "rock3" || d.kind === "crystal")
+      continue;
     const dx = wrap(d.x, cam.x + WORLD_W / 2, WORLD_W);
     const dy = wrap(d.y, cam.y + WORLD_H / 2, WORLD_H);
     ctx.save();
@@ -1899,6 +1949,45 @@ export function render(ctx: CanvasRenderingContext2D, s: GameState, sprites: Spr
       ctx.beginPath();
       ctx.ellipse(dx, dy, 96 * d.scale, 48 * d.scale, d.rot, 0, Math.PI * 2);
       ctx.fill();
+    } else if (d.kind === "puddle") {
+      // shallow reflective pool with a soft rim light
+      ctx.translate(dx, dy);
+      ctx.rotate(d.rot);
+      ctx.globalAlpha = 0.5;
+      ctx.fillStyle = "rgba(10,26,34,0.75)";
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 62 * d.scale, 30 * d.scale, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 0.28 + Math.sin(time * 1.4 + d.x) * 0.06;
+      ctx.strokeStyle = "rgba(150,235,255,0.9)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 62 * d.scale, 30 * d.scale, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 0.18;
+      ctx.beginPath();
+      ctx.ellipse(-14 * d.scale, -6 * d.scale, 22 * d.scale, 7 * d.scale, 0, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(200,245,255,0.9)";
+      ctx.fill();
+    } else if (d.kind === "tuft") {
+      // little grass tufts, drawn as three blades leaning with the wind
+      ctx.translate(dx, dy);
+      ctx.globalAlpha = 0.5;
+      ctx.strokeStyle = "rgba(90,150,110,0.9)";
+      ctx.lineWidth = 2.2 * d.scale;
+      ctx.lineCap = "round";
+      const sway = Math.sin(time * 1.5 + d.x * 0.05) * 3 * d.scale;
+      for (let b = -1; b <= 1; b++) {
+        ctx.beginPath();
+        ctx.moveTo(b * 5 * d.scale, 0);
+        ctx.quadraticCurveTo(
+          b * 6 * d.scale + sway,
+          -9 * d.scale,
+          b * 9 * d.scale + sway * 1.6,
+          -16 * d.scale,
+        );
+        ctx.stroke();
+      }
     } else if (d.kind === "crack") {
       ctx.globalAlpha = 0.4;
       ctx.strokeStyle = "rgba(6,8,14,0.9)";
