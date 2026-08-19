@@ -1993,82 +1993,102 @@ export function render(ctx: CanvasRenderingContext2D, s: GameState, sprites: Spr
   ctx.stroke();
   ctx.restore();
 
-  // floor decals: worn plates, cracks and etched glyphs
+  // arena furniture decals — panels, lane chevrons, vents and inset lights
+  const accent = floorSectorColor(s.floor);
   for (const d of s.decor) {
     if (d.kind === "rock1" || d.kind === "rock2" || d.kind === "rock3" || d.kind === "crystal")
       continue;
     const dx = wrap(d.x, cam.x + WORLD_W / 2, WORLD_W);
     const dy = wrap(d.y, cam.y + WORLD_H / 2, WORLD_H);
     ctx.save();
-    if (d.kind === "patch") {
-      ctx.globalAlpha = 0.2;
-      ctx.fillStyle = d.scale > 1 ? "#0d1420" : "#27334a";
-      ctx.beginPath();
-      ctx.ellipse(dx, dy, 96 * d.scale, 48 * d.scale, d.rot, 0, Math.PI * 2);
-      ctx.fill();
-    } else if (d.kind === "puddle") {
-      // shallow reflective pool with a soft rim light
-      ctx.translate(dx, dy);
+    ctx.translate(dx, dy);
+    if (d.kind === "panel") {
+      // painted deck panel: filled pad, bright outline, corner registration ticks
+      const w = 210 * d.scale;
+      const h = 130 * d.scale;
       ctx.rotate(d.rot);
-      ctx.globalAlpha = 0.5;
-      ctx.fillStyle = "rgba(10,26,34,0.75)";
+      ctx.globalAlpha = 0.22;
+      ctx.fillStyle = accent;
       ctx.beginPath();
-      ctx.ellipse(0, 0, 62 * d.scale, 30 * d.scale, 0, 0, Math.PI * 2);
+      ctx.roundRect(-w / 2, -h / 2, w, h, 14);
       ctx.fill();
-      ctx.globalAlpha = 0.28 + Math.sin(time * 1.4 + d.x) * 0.06;
-      ctx.strokeStyle = "rgba(150,235,255,0.9)";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, 62 * d.scale, 30 * d.scale, 0, 0, Math.PI * 2);
+      ctx.globalAlpha = 0.5;
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 3;
       ctx.stroke();
-      ctx.globalAlpha = 0.18;
-      ctx.beginPath();
-      ctx.ellipse(-14 * d.scale, -6 * d.scale, 22 * d.scale, 7 * d.scale, 0, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(200,245,255,0.9)";
-      ctx.fill();
-    } else if (d.kind === "tuft") {
-      // little grass tufts, drawn as three blades leaning with the wind
-      ctx.translate(dx, dy);
-      ctx.globalAlpha = 0.5;
-      ctx.strokeStyle = "rgba(90,150,110,0.9)";
-      ctx.lineWidth = 2.2 * d.scale;
-      ctx.lineCap = "round";
-      const sway = Math.sin(time * 1.5 + d.x * 0.05) * 3 * d.scale;
-      for (let b = -1; b <= 1; b++) {
+      ctx.globalAlpha = 0.35;
+      ctx.lineWidth = 5;
+      const tick = 22 * d.scale;
+      for (const [sx2, sy2] of [
+        [-1, -1],
+        [1, -1],
+        [-1, 1],
+        [1, 1],
+      ] as [number, number][]) {
         ctx.beginPath();
-        ctx.moveTo(b * 5 * d.scale, 0);
-        ctx.quadraticCurveTo(
-          b * 6 * d.scale + sway,
-          -9 * d.scale,
-          b * 9 * d.scale + sway * 1.6,
-          -16 * d.scale,
-        );
+        ctx.moveTo((sx2 * w) / 2 - sx2 * tick, (sy2 * h) / 2);
+        ctx.lineTo((sx2 * w) / 2, (sy2 * h) / 2);
+        ctx.lineTo((sx2 * w) / 2, (sy2 * h) / 2 - sy2 * tick);
         ctx.stroke();
       }
-    } else if (d.kind === "crack") {
-      ctx.globalAlpha = 0.4;
-      ctx.strokeStyle = "rgba(6,8,14,0.9)";
-      ctx.lineWidth = 2.2 * d.scale;
-      ctx.translate(dx, dy);
+    } else if (d.kind === "chevron") {
+      // hazard chevron pointing outward along a lane
+      ctx.rotate(d.rot);
+      ctx.globalAlpha = 0.3;
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 8;
+      ctx.lineCap = "butt";
+      ctx.lineJoin = "miter";
+      ctx.beginPath();
+      ctx.moveTo(-22, -26);
+      ctx.lineTo(14, 0);
+      ctx.lineTo(-22, 26);
+      ctx.stroke();
+    } else if (d.kind === "vent") {
+      // recessed grate: dark well with louvre bars and a rim
+      ctx.globalAlpha = 0.7;
+      ctx.fillStyle = "rgba(6,8,14,0.72)";
+      ctx.beginPath();
+      ctx.arc(0, 0, 34 * d.scale, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 0.45;
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.globalAlpha = 0.3;
+      ctx.lineWidth = 4;
+      for (let i = -2; i <= 2; i++) {
+        const off = i * 11 * d.scale;
+        const half = Math.sqrt(Math.max(0, (30 * d.scale) ** 2 - off ** 2));
+        ctx.beginPath();
+        ctx.moveTo(-half, off);
+        ctx.lineTo(half, off);
+        ctx.stroke();
+      }
+    } else if (d.kind === "stud") {
+      // inset perimeter light, breathing slowly
+      const glow = 0.45 + Math.sin(time * 2 + d.rot * 3) * 0.2;
+      ctx.globalCompositeOperation = "lighter";
+      const halo = ctx.createRadialGradient(0, 0, 0, 0, 0, 26);
+      halo.addColorStop(0, `rgba(150,225,255,${(0.3 * glow).toFixed(3)})`);
+      halo.addColorStop(1, "rgba(150,225,255,0)");
+      ctx.fillStyle = halo;
+      ctx.fillRect(-26, -26, 52, 52);
+      ctx.fillStyle = `rgba(210,245,255,${(0.5 + glow * 0.4).toFixed(3)})`;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 5, 3.4, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // sector gate glyph etched into the deck
+      ctx.globalAlpha = 0.26 + Math.sin(time * 1.6 + d.x) * 0.05;
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 4;
       ctx.rotate(d.rot);
       ctx.beginPath();
-      ctx.moveTo(-60 * d.scale, 0);
-      ctx.lineTo(-18 * d.scale, -9 * d.scale);
-      ctx.lineTo(14 * d.scale, 6 * d.scale);
-      ctx.lineTo(58 * d.scale, -4 * d.scale);
-      ctx.stroke();
-    } else {
-      // glyph ring etched into the deck, faintly lit
-      ctx.globalAlpha = 0.22 + Math.sin(time * 1.6 + d.x) * 0.05;
-      ctx.strokeStyle = "rgba(120,210,255,0.85)";
-      ctx.lineWidth = 3;
-      ctx.translate(dx, dy);
-      ctx.rotate(d.rot + time * 0.15);
-      ctx.beginPath();
-      ctx.arc(0, 0, 52 * d.scale, 0, Math.PI * 1.45);
+      ctx.arc(0, 0, 46 * d.scale, -Math.PI * 0.62, Math.PI * 0.62);
       ctx.stroke();
       ctx.beginPath();
-      ctx.arc(0, 0, 34 * d.scale, Math.PI, Math.PI * 2.3);
+      ctx.arc(0, 0, 30 * d.scale, Math.PI * 0.4, Math.PI * 1.6);
       ctx.stroke();
     }
     ctx.restore();
