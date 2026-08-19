@@ -118,7 +118,79 @@ export const WEAPONS: Record<WeaponKey, Weapon> = {
     knock: 3,
     shake: 2,
   },
+  smg: {
+    key: "smg",
+    name: "Wasp SMG",
+    color: "#ffe066",
+    sprite: "gunPistol",
+    rate: 0.075,
+    damage: 2.4,
+    pellets: 1,
+    spread: 0.09,
+    speed: 940,
+    bulletRadius: 4,
+    pierce: 0,
+    knock: 4,
+    shake: 2,
+  },
+  sniper: {
+    key: "sniper",
+    name: "Void Lance",
+    color: "#b98bff",
+    sprite: "gunRifle",
+    rate: 0.95,
+    damage: 34,
+    pellets: 1,
+    spread: 0.004,
+    speed: 1700,
+    bulletRadius: 7,
+    pierce: 4,
+    knock: 22,
+    shake: 9,
+  },
+  flak: {
+    key: "flak",
+    name: "Flak Cannon",
+    color: "#ff7b4d",
+    sprite: "gunShotgun",
+    rate: 0.8,
+    damage: 3.4,
+    pellets: 11,
+    spread: 0.52,
+    speed: 700,
+    bulletRadius: 6,
+    pierce: 1,
+    knock: 20,
+    shake: 11,
+  },
+  plasma: {
+    key: "plasma",
+    name: "Plasma Coil",
+    color: "#4dffd0",
+    sprite: "gunRifle",
+    rate: 0.34,
+    damage: 12,
+    pellets: 1,
+    spread: 0.02,
+    speed: 620,
+    bulletRadius: 12,
+    pierce: 3,
+    knock: 14,
+    shake: 5,
+  },
 };
+
+/** weapons that can roll out of a loot crate */
+const LOOT_WEAPONS: WeaponKey[] = [
+  "pistol",
+  "rifle",
+  "shotgun",
+  "minigun",
+  "smg",
+  "sniper",
+  "flak",
+  "plasma",
+];
 
 /* -------------------------------- characters -------------------------------- */
 
@@ -435,23 +507,23 @@ const FLOOR_LOOKS: Record<FloorTheme, FloorLook> = {
     sector: "rgba(120,240,180,0.12)",
   },
   bone: {
-    // sun-bleached boneyard sand
-    base: ["#2a2419", "#221d15", "#1a1610"],
-    plate: "238,216,170",
-    hi: "rgba(255,238,200,0.06)",
-    seam: "rgba(230,190,120,0.10)",
-    grain: "250,232,190",
-    plates: false,
-    sector: "rgba(255,206,120,0.12)",
+    // pale ceramic arena tiling with warm seam lights
+    base: ["#2b2b33", "#23232b", "#1b1b22"],
+    plate: "236,230,214",
+    hi: "rgba(255,250,236,0.07)",
+    seam: "rgba(235,200,140,0.13)",
+    grain: "248,242,226",
+    plates: true,
+    sector: "rgba(255,214,140,0.12)",
   },
   ash: {
-    base: ["#1b1a22", "#15141c", "#100f16"],
-    plate: "170,160,190",
-    hi: "rgba(220,215,235,0.05)",
-    seam: "rgba(150,120,190,0.10)",
-    grain: "220,214,236",
-    plates: false,
-    sector: "rgba(186,150,240,0.10)",
+    base: ["#1d1b26", "#17151f", "#121017"],
+    plate: "176,166,200",
+    hi: "rgba(224,218,242,0.06)",
+    seam: "rgba(158,128,200,0.13)",
+    grain: "224,218,242",
+    plates: true,
+    sector: "rgba(186,150,240,0.11)",
   },
 };
 
@@ -585,74 +657,59 @@ function arenaTile(theme: FloorTheme = "slab"): HTMLCanvasElement {
 export function createState(character: CharacterKey = "spike"): GameState {
   const c = CHARACTERS[character];
   const decor: Decor[] = [];
-  // scuffed arena floor: worn patches, cracks and etched glyphs
-  for (let i = 0; i < 18; i++) {
-    decor.push({
-      x: rand(-WORLD_W / 2, WORLD_W / 2),
-      y: rand(-WORLD_H / 2, WORLD_H / 2),
-      scale: rand(0.7, 1.4),
-      kind: "patch",
-      rot: rand(0, Math.PI * 2),
+  const R = arenaRadius(1, 1);
+
+  // The arena is laid out, not scattered: a central plaza, four approach lanes,
+  // two rings of cover and a lit perimeter, so the space reads as a real map.
+  const ring = (count: number, radius: number, offset: number) =>
+    Array.from({ length: count }, (_, i) => {
+      const a = offset + (i / count) * Math.PI * 2;
+      return { x: Math.cos(a) * radius, y: Math.sin(a) * radius, a };
     });
-  }
-  for (let i = 0; i < 16; i++) {
-    decor.push({
-      x: rand(-WORLD_W / 2, WORLD_W / 2),
-      y: rand(-WORLD_H / 2, WORLD_H / 2),
-      scale: rand(0.6, 1.5),
-      kind: "crack",
-      rot: rand(0, Math.PI * 2),
-    });
-  }
-  for (let i = 0; i < 6; i++) {
-    decor.push({
-      x: rand(-WORLD_W / 2, WORLD_W / 2),
-      y: rand(-WORLD_H / 2, WORLD_H / 2),
-      scale: rand(0.8, 1.6),
-      kind: "glyph",
-      rot: rand(0, Math.PI * 2),
-    });
-  }
-  // glowing crystal clusters, shallow pools and grass tufts add depth to the arena
-  for (let i = 0; i < 14; i++) {
-    decor.push({
-      x: rand(-WORLD_W / 2, WORLD_W / 2),
-      y: rand(-WORLD_H / 2, WORLD_H / 2),
-      scale: rand(0.55, 1.15),
-      kind: "crystal",
-      rot: rand(0, Math.PI * 2),
-    });
-  }
-  for (let i = 0; i < 10; i++) {
-    decor.push({
-      x: rand(-WORLD_W / 2, WORLD_W / 2),
-      y: rand(-WORLD_H / 2, WORLD_H / 2),
-      scale: rand(0.7, 1.6),
-      kind: "puddle",
-      rot: rand(0, Math.PI * 2),
-    });
-  }
-  for (let i = 0; i < 26; i++) {
-    decor.push({
-      x: rand(-WORLD_W / 2, WORLD_W / 2),
-      y: rand(-WORLD_H / 2, WORLD_H / 2),
-      scale: rand(0.5, 1.2),
-      kind: "tuft",
-      rot: rand(0, Math.PI * 2),
-    });
+
+  // painted deck panels marking the plaza and the four staging bays
+  decor.push({ x: 0, y: 0, scale: 2.6, kind: "panel", rot: 0 });
+  for (const q of ring(4, R * 0.52, Math.PI / 4)) {
+    decor.push({ x: q.x, y: q.y, scale: 1.5, kind: "panel", rot: q.a });
   }
 
-  // a few stone blocks so the arena has silhouettes to read against
-  for (let i = 0; i < 10; i++) {
-    decor.push({
-      x: rand(-WORLD_W / 2, WORLD_W / 2),
-      y: rand(-WORLD_H / 2, WORLD_H / 2),
-      scale: rand(0.4, 0.85),
-      kind: pick(["rock1", "rock2", "rock3"] as const),
-      rot: 0,
-    });
+  // hazard chevrons pointing down each of the four approach lanes
+  for (const lane of ring(4, 1, 0)) {
+    for (let step = 1; step <= 5; step++) {
+      const d = R * (0.2 + step * 0.13);
+      decor.push({ x: lane.x * d, y: lane.y * d, scale: 1, kind: "chevron", rot: lane.a });
+    }
   }
 
+  // vents set into the plaza floor, evenly spaced
+  for (const v of ring(6, R * 0.3, Math.PI / 6)) {
+    decor.push({ x: v.x, y: v.y, scale: 1, kind: "vent", rot: 0 });
+  }
+
+  // inset floor lights trace the perimeter walkway
+  for (const l of ring(36, R * 0.9, 0)) {
+    decor.push({ x: l.x, y: l.y, scale: 1, kind: "stud", rot: l.a });
+  }
+
+  // marker glyphs at the cardinal sector gates
+  for (const g of ring(4, R * 0.78, 0)) {
+    decor.push({ x: g.x, y: g.y, scale: 1.1, kind: "glyph", rot: g.a });
+  }
+
+  // beacon crystals mark the outer corners of the fighting ring
+  for (const c of ring(8, R * 0.68, Math.PI / 8)) {
+    decor.push({ x: c.x, y: c.y, scale: 0.95, kind: "crystal", rot: 0 });
+  }
+
+  // two symmetric rings of cover blocks — the actual tactical furniture
+  const inner = ring(6, R * 0.36, Math.PI / 6);
+  const outer = ring(8, R * 0.6, 0);
+  inner.forEach((c, i) =>
+    decor.push({ x: c.x, y: c.y, scale: 0.7, kind: (["rock1", "rock2", "rock3"] as const)[i % 3]!, rot: 0 }),
+  );
+  outer.forEach((c, i) =>
+    decor.push({ x: c.x, y: c.y, scale: 0.85, kind: (["rock2", "rock3", "rock1"] as const)[i % 3]!, rot: 0 }),
+  );
 
   const state: GameState = {
     cam: { x: -WORLD_W / 2, y: -WORLD_H / 2 },
@@ -928,7 +985,7 @@ function dropPickup(s: GameState, x: number, y: number, species: Species) {
   if (r2 < 0.2) kind = "health";
   else if (r2 < 0.34) {
     kind = "weapon";
-    weapon = pick(["pistol", "rifle", "shotgun", "minigun"] as WeaponKey[]);
+    weapon = pick(LOOT_WEAPONS);
   } else if (r2 < 0.6) kind = "speed";
   else if (r2 < 0.8) kind = "rate";
   else kind = "damage";
@@ -955,7 +1012,7 @@ function scatterLoot(s: GameState) {
   if (r < 0.18) kind = "health";
   else if (r < 0.34) {
     kind = "weapon";
-    weapon = pick(["pistol", "rifle", "shotgun", "minigun"] as WeaponKey[]);
+    weapon = pick(LOOT_WEAPONS);
   } else if (r < 0.6) kind = "speed";
   else if (r < 0.8) kind = "rate";
   else kind = "damage";
